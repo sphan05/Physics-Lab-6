@@ -1,0 +1,16 @@
+import pandas as pd
+import numpy as np
+
+# Load the data for variable force experiment
+# Replace 'variable_force_data.txt' with the actual path of your data file
+data = pd.read_csv('variable_force_data.txt', delimiter='\t')
+
+# Assuming columns are named 'Force (N)' and 'Position (m)'
+force = data['Force (N)']
+position = data['Position (m)']
+
+# Integrate force over distance to calculate work using the trapezoidal rule
+work_done = np.trapz(force, position)
+
+# Output the calculated work done
+print(f"Work done (J): {work_done:.3f}")
