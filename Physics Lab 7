@@ -1,0 +1,36 @@
+# Import necessary libraries
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Recorded data points in cm with uncertainty of ±0.05 cm
+data_points = np.array([255.5, 255.7, 255.8, 252.7, 252.9, 252.9, 253.7, 253.8, 252.7, 253.0,
+                        252.0, 251.3, 250.8, 249.8, 250.1, 249.8, 250.7, 250.7, 251.1, 250.1,
+                        250.0, 249.7, 249.4, 248.0, 248.3])
+
+# Step 1: Calculating Mean, Standard Deviation, and Uncertainty
+# Calculate mean and standard deviation
+mean_distance = np.mean(data_points)
+std_dev_distance = np.std(data_points, ddof=1)  # ddof=1 for sample standard deviation
+uncertainty_in_mean = std_dev_distance / np.sqrt(len(data_points))  # Standard error in the mean
+
+# Print calculated values
+print("Mean Distance (cm):", mean_distance)
+print("Standard Deviation (cm):", std_dev_distance)
+print("Uncertainty in Mean Distance (cm):", uncertainty_in_mean)
+
+# Step 2: Data Table Creation
+# Create a DataFrame for the data points collected
+data_points_df = pd.DataFrame(data_points, columns=["Impact Distance (cm)"])
+
+# Display the data table
+print("\nData Table of Impact Distances:\n", data_points_df)
+
+# Step 3: Visualization - Histogram of Recorded Impact Distances
+plt.figure(figsize=(10, 6))
+plt.hist(data_points, bins=10, edgecolor='black', alpha=0.7)
+plt.title('Histogram of Recorded Impact Distances')
+plt.xlabel('Distance (cm)')
+plt.ylabel('Frequency')
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.show()
