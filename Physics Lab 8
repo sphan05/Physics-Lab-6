@@ -1,0 +1,104 @@
+import pandas as pd
+from scipy.stats import linregress
+
+# Functions for Analysis
+def fit_linear_and_get_uncertainty(time, velocity):
+    """Fit a straight line to angular velocity vs time to get angular acceleration and its uncertainty."""
+    slope, intercept, r_value, p_value, std_err = linregress(time, velocity)
+    return {
+        "angular_acceleration": slope,
+        "uncertainty": std_err,
+        "r_squared": r_value**2
+    }
+
+def calculate_moment_of_inertia(mass, radius, configuration="point_mass"):
+    """Calculate the moment of inertia for different configurations."""
+    if configuration == "point_mass":
+        return mass * (radius**2)
+    elif configuration == "cylinder":
+        return 0.5 * mass * ((radius["outer"]**2) + (radius["inner"]**2))
+    else:
+        raise ValueError("Invalid configuration type")
+
+def compare_measured_vs_theoretical(experimental, theoretical, uncertainty):
+    """Compare experimental and theoretical values, considering uncertainty."""
+    difference = abs(experimental - theoretical)
+    within_uncertainty = difference <= uncertainty
+    return {
+        "difference": difference,
+        "within_uncertainty": within_uncertainty
+    }
+
+def calculate_angular_momentum(moment_of_inertia, angular_velocity):
+    """Calculate angular momentum."""
+    return moment_of_inertia * angular_velocity
+
+# Analysis Program
+def analyze_rotational_motion(data):
+    """Perform the full analysis on the rotational motion data."""
+    results = []
+    # 1. Linear fit for angular accelerations
+    for time_col, velocity_col, label in [
+        ("Time (s) Medium 20g", "Angular Velocity (rad/s) Medium 20g", "Medium 20g"),
+        ("Time (s) Medium 30g", "Angular Velocity (rad/s) Medium 30g", "Medium 30g"),
+        ("Time (s) Medium 40g", "Angular Velocity (rad/s) Medium 40g", "Medium 40g"),
+    ]:
+        time = data[time_col].dropna()
+        velocity = data[velocity_col].dropna()
+        result = fit_linear_and_get_uncertainty(time, velocity)
+        result["Configuration"] = label
+        results.append(result)
+
+    angular_acceleration_results = pd.DataFrame(results)
+
+    # 2. Moments of Inertia
+    mass_disk = 0.1215  # Disk mass in kg
+    mass_cylinder_large = 0.4673  # Hollow cylinder mass in kg
+    radius_disk = 0.03836  # Disk radius in meters
+
+    moment_inertia_disk = calculate_moment_of_inertia(mass_disk, radius_disk)
+    moment_inertia_cylinder = calculate_moment_of_inertia(
+        mass_cylinder_large, {"outer": 0.07672, "inner": 0.03836}, configuration="cylinder"
+    )
+
+    moment_inertia_results = pd.DataFrame([
+        {"Component": "Disk", "Moment of Inertia (kg·m²)": moment_inertia_disk},
+        {"Component": "Hollow Cylinder", "Moment of Inertia (kg·m²)": moment_inertia_cylinder}
+    ])
+
+    # 3. Conservation of Angular Momentum
+    omega_initial = 10  # Initial angular velocity (rad/s)
+    omega_final = 6.5  # Final angular velocity (rad/s)
+
+    L_initial = calculate_angular_momentum(moment_inertia_disk, omega_initial)
+    L_final = calculate_angular_momentum(moment_inertia_disk + moment_inertia_cylinder, omega_final)
+
+    conservation_results = {
+        "Initial Angular Momentum": L_initial,
+        "Final Angular Momentum": L_final,
+        "Conservation Verified": abs(L_initial - L_final) < 0.01
+    }
+
+    return angular_acceleration_results, moment_inertia_results, conservation_results
+
+# Load the datasets
+file_paths = {
+    "rod_and_2_brass_medium_1": "/mnt/data/rod & 2 brass cylinders (medium) (1).csv",
+    "conservation": "/mnt/data/Conservation.csv",
+    "rod_and_2_brass_medium": "/mnt/data/rod & 2 brass cylinders (medium).csv",
+    "disk_and_cylinder": "/mnt/data/Disk & Cylinder.csv",
+    "rod_and_2_brass": "/mnt/data/rod & 2 brass cylinders.csv"
+}
+
+data_frames = {name: pd.read_csv(path) for name, path in file_paths.items()}
+data = data_frames['rod_and_2_brass_medium']
+
+# Run the analysis
+angular_acceleration_results, moment_inertia_results, conservation_results = analyze_rotational_motion(data)
+
+# Display results
+import ace_tools as tools
+tools.display_dataframe_to_user(name="Angular Accelerations Results", dataframe=angular_acceleration_results)
+tools.display_dataframe_to_user(name="Moments of Inertia Results", dataframe=moment_inertia_results)
+print("Conservation of Angular Momentum Results:")
+print(conservation_results)
